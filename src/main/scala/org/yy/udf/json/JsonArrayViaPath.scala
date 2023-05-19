@@ -95,7 +95,18 @@ object JsonArrayViaPath {
         +---+-------------+---+
          */
 
-
+        // 查找jsonobj的 k1下的所有数组中 y7=b3的jsonobj的m1组成的数组
+        spark.sql("""select arraystr_from_json_via_path('{"k1":[{"s1":"b1","m1":"vvv"},{"y7":"b3","m1":"vv333"}],"k2":"v2"}','$.k1[*][?(@.y7 = "b3")].m1') as v """)
+          .withColumn("typename", expr("typeof(v)"))
+          .withColumn("sz", expr("size(v)"))
+          .show(false)
+        /*
+        +-------+-------------+---+
+        |v      |typename     |sz |
+        +-------+-------------+---+
+        |[vv333]|array<string>|1  |
+        +-------+-------------+---+
+         */
 
 
         spark.stop()

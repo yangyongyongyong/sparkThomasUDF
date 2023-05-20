@@ -1,4 +1,4 @@
-package org.yy.udf.json.JsonArrAdd
+package org.yy.udf.json.JsonArr
 
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider
@@ -15,7 +15,7 @@ import scala.collection.JavaConverters._
  * 注意:
  *      jsonArray中只能新增 无法更新,不存在更新的概念
  */
-object AddVviaJsonPath {
+object AddJsonArrElem {
     private def configuration = Configuration.builder()
       .jsonProvider(new JacksonJsonNodeJsonProvider())
       .mappingProvider(new JacksonMappingProvider())

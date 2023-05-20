@@ -6,7 +6,7 @@ import org.apache.spark.sql.functions.{expr, udf}
 
 import scala.util.Try
 
-object OneStrViaPath {
+object GetStringFromJson {
     /*
     输入:
         jsonArray/jsonObject都可 String类型

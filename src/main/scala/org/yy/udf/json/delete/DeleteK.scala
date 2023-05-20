@@ -1,4 +1,4 @@
-package org.yy.udf.json.jsonObj.delete
+package org.yy.udf.json.delete
 
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider
@@ -12,10 +12,11 @@ import scala.util.Try
 
 
 /**
- *  通过jsonpath定位并 删除jsonObj中的某个key
+ *  同时支持 jsonObj和jsonArray
+ *
+ *  通过jsonpath定位并 删除jsonObj中的某个key 或者 删除jsonArray中的某个符合jsonPath条件的对象
  *  注意:
  *      如果我们给的jsonPath没有匹配的数据 则返回原始数据(注意 这里是解析后重新写入的 所以之前的换行 空格可能都会没了)
- *
  */
 object DeleteK {
 
@@ -151,6 +152,26 @@ object DeleteK {
         }
          */
 
+
+        // 把jsonArray中 不包含recordid的都给删除
+        spark.sql(
+            s"""
+                          select
+                              delete_k('${js2}',"$$.key2[*][?(!(@.recordid))]") as col4
+                          """)
+          .show(false)
+        /*
+        {
+            "key1":"value1",
+            "key2":[
+                {
+                    "recordid":"xxxxxx",
+                    "priority":"1"
+                }
+            ],
+            "key3":234
+        }
+         */
 
 
         spark.stop()

@@ -7,7 +7,7 @@ import org.apache.spark.sql.functions.{explode, expr, udf}
 import scala.util.Try
 
 
-object JsonArrayViaPath {
+object GetArrayStringFromJson {
 
     /*
     输入:

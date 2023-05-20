@@ -8,6 +8,8 @@ import org.apache.spark.sql.functions.{collect_set, lit, udf}
  * desc: 合并 array[jsonobj] 为 jsonarray
  * input: array( '{"b":"v2"}' , '{"a":"v1"}' )        sql的array[String]类型
  * output: [{"b":"v2"},{"a":"v1"}]                    string类型
+ * 注意:
+ *      如果输入的数组为空 则返回null . 不是字符串"null"
  */
 object MergeJsonObjList2JsonArr {
 
@@ -20,7 +22,7 @@ object MergeJsonObjList2JsonArr {
                     case "jsonobj" | "jsonobject" | "obj" | "object" => list.filter(_.nonEmpty).foreach(s => array.add(JSON.parseObject(s)))
                     case "jsonarr" | "jsonarray" | "arr" | "array" => list.filter(_.nonEmpty).foreach(s => array.add(JSON.parseArray(s)))
                 }
-                array.toString()
+                if (array.size() > 0) array.toString() else null
             } else {
                 null
             }
@@ -55,7 +57,7 @@ object MergeJsonObjList2JsonArr {
         |c2 |c1                     |
         +---+-----------------------+
         |2  |[{"b":"v2"},{"a":"v1"}]|
-        |1  |[]                     |
+        |1  |null                   |
         +---+-----------------------+
          */
 
@@ -72,8 +74,20 @@ object MergeJsonObjList2JsonArr {
         |c2 |c1                                     |
         +---+---------------------------------------+
         |2  |[[{"k1":"v1"}],[{"k3":"v3","k4":"v4"}]]|
-        |1  |[]                                     |
+        |1  |null                                   |
         +---+---------------------------------------+
+         */
+
+        df1.groupBy("c2")
+          .agg(merge_jsonobj_list_2_jsonarr(collect_set($"c1"), lit("arr")).as("c1"))
+          .filter('c1.isNull)
+          .show(false)
+        /*
+        +---+----+
+        |c2 |c1  |
+        +---+----+
+        |1  |null|
+        +---+----+
          */
 
 

@@ -22,6 +22,7 @@ import scala.collection.JavaConverters._
  *      比如数组是人类,业务需求是: 如果某个具体的人没有性别,就从同层级其他人里随便捞一个性别填充进去
  * 注意:
  *      如果value的jsonPath 无法从原始数据中提取到值  则会报错
+ *      value的jsonPath 如果解析出来有多个,则自动选择第一个作为结果
  */
 object PutKV2 {
 
@@ -75,6 +76,10 @@ object PutKV2 {
               |}
               |""".stripMargin
 
+        /**
+         *  需要put的key对应的path '$.key2[*][?(!(@.recordid))]'  找到key2下的所有value中, 不包含recordid这个jsonObject位置
+         *  需要put的value对应的path '$.key2[*][?(@.recordid)].recordid' 找到key2下的所有value中, 包含recordid这个jsonObject位置,然后取出recordid的值中的第一个
+         */
         spark.sql(
             s"""
               |select

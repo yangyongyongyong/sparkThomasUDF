@@ -1,8 +1,8 @@
-package org.yy.udf.json
+package org.yy.udf.json.get
 
+import com.alibaba.fastjson2.{JSONPath, JSONReader}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{expr, udf}
-import com.alibaba.fastjson2.{JSONPath, JSONReader}
 
 import scala.util.Try
 
@@ -37,7 +37,6 @@ object OneStrViaPath {
             .getOrCreate()
         val sc = spark.sparkContext
         spark.sparkContext.setLogLevel("ERROR")
-        import spark.implicits._
         spark.udf.register("onestr_from_json_via_path",oneonestr_from_json_via_path)
 
         spark.sql("""select onestr_from_json_via_path('[{"des":"i am 1","id":1},{"des":"i am 2","id":2},{"des":"i am 0","id":0}]','$[?(@.id = 0)].des[0]') as v """)

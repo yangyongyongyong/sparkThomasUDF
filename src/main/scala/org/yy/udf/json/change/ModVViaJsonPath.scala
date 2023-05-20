@@ -1,11 +1,11 @@
-package org.yy.udf.json
+package org.yy.udf.json.change
 
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{expr, udf, variance}
-import com.jayway.jsonpath.{Configuration, JsonPath}
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider
-import scala.util.Try
+import com.jayway.jsonpath.{Configuration, JsonPath}
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions.udf
+
 import scala.collection.JavaConverters._
 
 /*
@@ -41,7 +41,6 @@ object ModVViaJsonPath {
           .getOrCreate()
         val sc = spark.sparkContext
         spark.sparkContext.setLogLevel("ERROR")
-        import spark.implicits._
 
 
         val js1 =

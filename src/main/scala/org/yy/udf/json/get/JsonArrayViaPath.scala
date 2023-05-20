@@ -1,11 +1,9 @@
-package org.yy.udf.json
+package org.yy.udf.json.get
 
+import com.alibaba.fastjson2.{JSON, JSONPath, JSONReader}
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions.{expr, udf}
-import com.alibaba.fastjson2.JSON
-import com.alibaba.fastjson2.{JSONPath, JSONReader}
 
-import scala.collection.JavaConverters._
 import scala.util.Try
 
 
@@ -44,7 +42,6 @@ object JsonArrayViaPath {
           .getOrCreate()
         val sc = spark.sparkContext
         spark.sparkContext.setLogLevel("ERROR")
-        import spark.implicits._
 
         spark.udf.register("arraystr_from_json_via_path", arraystr_from_json_via_path)
         spark.sql("select arraystr_from_json_via_path('[{\"k1\":11,\"k2\":22},{\"k1\":44,\"k2\":55}]','$[*].k1') as v")

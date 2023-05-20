@@ -1,8 +1,8 @@
-package org.yy.udf.json
+package org.yy.udf.json.mergeJsonList
 
 import com.alibaba.fastjson2.{JSON, JSONArray}
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{collect_set, lit, udf}
+import org.apache.spark.sql.functions.{collect_set, udf}
 
 /**
  * desc: 合并 array[jsonobj | jsonArr] 为 jsonarray

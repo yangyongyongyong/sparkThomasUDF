@@ -2,7 +2,7 @@ package org.yy.udf.json.get
 
 import com.alibaba.fastjson2.{JSON, JSONPath, JSONReader}
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{expr, udf}
+import org.apache.spark.sql.functions.{explode, expr, udf}
 
 import scala.util.Try
 
@@ -42,6 +42,7 @@ object JsonArrayViaPath {
           .getOrCreate()
         val sc = spark.sparkContext
         spark.sparkContext.setLogLevel("ERROR")
+        import spark.implicits._
 
         spark.udf.register("arraystr_from_json_via_path", arraystr_from_json_via_path)
         spark.sql("select arraystr_from_json_via_path('[{\"k1\":11,\"k2\":22},{\"k1\":44,\"k2\":55}]','$[*].k1') as v")
@@ -105,6 +106,20 @@ object JsonArrayViaPath {
         +-------+-------------+---+
          */
 
+        // 用于炸开json数组的案例
+        spark.sql("""select arraystr_from_json_via_path('{"k1":[{"s1":"b1","m1":"vvv"},{"y7":"b3","m1":"vv333"}],"k2":"v2"}','$.k1[*]') as v1 """)
+          .withColumn("typename", expr("typeof(v1)"))
+          .withColumn("sz", expr("size(v1)"))
+          .select('v1,'typename,'sz,explode('v1).as("v1_explode"))
+          .show(false)
+        /*
+        +--------------------------------------------------+-------------+---+------------------------+
+        |v1                                                |typename     |sz |v1_explode              |
+        +--------------------------------------------------+-------------+---+------------------------+
+        |[{"s1":"b1","m1":"vvv"}, {"y7":"b3","m1":"vv333"}]|array<string>|2  |{"s1":"b1","m1":"vvv"}  |
+        |[{"s1":"b1","m1":"vvv"}, {"y7":"b3","m1":"vv333"}]|array<string>|2  |{"y7":"b3","m1":"vv333"}|
+        +--------------------------------------------------+-------------+---+------------------------+
+         */
 
         spark.stop()
     }

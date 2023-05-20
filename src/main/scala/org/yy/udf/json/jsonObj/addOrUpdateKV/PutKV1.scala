@@ -68,6 +68,7 @@ object PutKV1 {
               |""".stripMargin
 
         // jsonobj 中新增 kv 对; value支持其他基本数据类型
+        // 这里含义是 key2下所有元素中 没有recordid这个key的元素,新增一个kv对
         spark.sql(s"""
     select
         put_kv_via_jsonpath('${js}',"$$.key2[*][?(!(@.recordid))]", "recordid", "fakeRecordid") as col1

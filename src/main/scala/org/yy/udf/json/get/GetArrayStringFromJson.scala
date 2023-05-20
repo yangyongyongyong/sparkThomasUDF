@@ -26,7 +26,7 @@ object GetArrayStringFromJson {
             } else {
                 Try {
                     // fastjson2 使用jsonpath解析
-                    val jsarr = JSON.parseArray(JSONPath.of(jsPath).extract(JSONReader.of(js)).toString());
+                    val jsarr = JSON.parseArray(JSONPath.of(jsPath).extract(JSONReader.of(js)).toString())
                     // jsarr 转 Array[String]
                     jsarr.toArray().map(_.toString)
                 }

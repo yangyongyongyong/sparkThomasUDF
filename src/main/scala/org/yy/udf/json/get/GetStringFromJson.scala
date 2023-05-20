@@ -39,38 +39,62 @@ object GetStringFromJson {
         spark.sparkContext.setLogLevel("ERROR")
         spark.udf.register("onestr_from_json_via_path",oneonestr_from_json_via_path)
 
-        spark.sql("""select onestr_from_json_via_path('[{"des":"i am 1","id":1},{"des":"i am 2","id":2},{"des":"i am 0","id":0}]','$[?(@.id = 0)].des[0]') as v """)
-          .withColumn("typename", expr("typeof(v)"))
+        spark.sql("""select onestr_from_json_via_path('[{"des":"i am 1","id":1},{"des":"i am 2","id":2},{"des":"i am 0","id":0}]','$[?(@.id = 0)].des[0]') as v1 """)
+          .withColumn("typename", expr("typeof(v1)"))
           .show(false)
         /*
         +------+--------+
-        |v     |typename|
+        |v1     |typename|
         +------+--------+
         |i am 0|string  |
         +------+--------+
          */
 
 
-        spark.sql("""select onestr_from_json_via_path('[{"des":"i am 1","id":1},{"des":"i am 2","id":2},{"des":"i am 0","id":0}]','$[?(@.id = 0)].des[1]') as v """)
-          .withColumn("typename", expr("typeof(v)"))
+
+        spark.sql("""select onestr_from_json_via_path('[{"des":"i am 1","id":1},{"des":"i am 2","id":2},{"des":"i am 0","id":0}]','$[?(@.id = 0)].des[1]') as v2 """)
+          .withColumn("typename", expr("typeof(v2)"))
           .show(false)
         /*
         +----+--------+
-        |v   |typename|
+        |v2   |typename|
         +----+--------+
         |null|string  |
         +----+--------+
          */
 
-        spark.sql("""select onestr_from_json_via_path(null,'$[?(@.id = 0)].des[1]') as v """)
-          .withColumn("typename", expr("typeof(v)"))
+        spark.sql("""select onestr_from_json_via_path(null,'$[?(@.id = 0)].des[1]') as v3 """)
+          .withColumn("typename", expr("typeof(v3)"))
           .show(false)
         /*
         +----+--------+
-        |v   |typename|
+        |v3   |typename|
         +----+--------+
         |null|string  |
         +----+--------+
+         */
+
+
+        // 值筛选 注意语法  @.id==0 和  @.id=="0" 是不一样的; = 和 == 都行,但是按照文档走,请使用 == ;
+        // @.id == 0 或者 @.id==0 都行,空格不影响结果
+        spark.sql("""select onestr_from_json_via_path('{"des":"i am 0","id":0}','$[?(@.id == 0)]') as v1_1 """)
+          .show()
+        /*
+        +--------------------+
+        |                v1_1|
+        +--------------------+
+        |{"des":"i am 0","...|
+        +--------------------+
+         */
+
+        spark.sql("""select onestr_from_json_via_path('{"des":"i am 0","id":0}','$[?(@.id=="0")]') as v1_2 """)
+          .show()
+        /*
+        +----+
+        |v1_2|
+        +----+
+        |null|
+        +----+
          */
 
 

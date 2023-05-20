@@ -1,4 +1,4 @@
-package org.yy.udf.json.put
+package org.yy.udf.json.jsonObj.addOrUpdateKV
 
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider
@@ -9,23 +9,26 @@ import org.apache.spark.sql.functions.udf
 import scala.collection.JavaConverters._
 
 /**
- * jsonarr 中添加 value 注意:没有key
- *      value 支持基础数据类型
+ * jsonobj(不支持jsonArray) 添加kv对
+ *      value 支持基础数据类型 用户指定具体值
  *      value 支持sql中的array类型
+ * 特别注意:
+ *      jsonPath解析后 不要是jsonarray,该函数只针对jsonObj  如果是jsonArray则会报错
+ *      put的含义: 如果k存在则更新value,如果不存在则新增kv
  */
-object PutVviaJsonPath {
+object PutKV1 {
     private def configuration = Configuration.builder()
       .jsonProvider(new JacksonJsonNodeJsonProvider())
       .mappingProvider(new JacksonMappingProvider())
       .build();
 
-    val put_v_via_jsonpath = udf(
-        (js:String,jspath:String,v:Any) => {
+    val put_kv_via_jsonpath = udf(
+        (js:String,jspath:String,k:String,v:Any) => {
             if (!v.isInstanceOf[Seq[Any]]) {
-                JsonPath.using(configuration).parse(js).add(jspath,v).jsonString()
+                JsonPath.using(configuration).parse(js).put(jspath, k, v).jsonString()
             }else {
-                // 处理数组
-                JsonPath.using(configuration).parse(js).add(jspath, v.asInstanceOf[Seq[Any]].asJava).jsonString()
+                // value是 sql中数组类型
+                JsonPath.using(configuration).parse(js).put(jspath,k, v.asInstanceOf[Seq[Any]].asJava).jsonString()
             }
         }
     )
@@ -39,7 +42,7 @@ object PutVviaJsonPath {
             .getOrCreate()
         val sc = spark.sparkContext
         spark.sparkContext.setLogLevel("ERROR")
-        spark.udf.register("put_v_via_jsonpath",put_v_via_jsonpath)
+        spark.udf.register("put_kv_via_jsonpath",put_kv_via_jsonpath)
 
 
         val js =
@@ -64,10 +67,10 @@ object PutVviaJsonPath {
               |}
               |""".stripMargin
 
-        // jsonarray 中新增 value
+        // jsonobj 中新增 kv 对; value支持其他基本数据类型
         spark.sql(s"""
     select
-        put_v_via_jsonpath('${js}',"$$.key2", "value_new_1") as col1
+        put_kv_via_jsonpath('${js}',"$$.key2[*][?(!(@.recordid))]", "recordid", "fakeRecordid") as col1
         """)
           .show(false)
         /*
@@ -76,7 +79,8 @@ object PutVviaJsonPath {
             "key2":[
                 {
                     "k1":"v1",
-                    "priority":"0"
+                    "priority":"0",
+                    "recordid":"fakeRecordid"
                 },
                 {
                     "recordid":"xxxxxx",
@@ -84,28 +88,29 @@ object PutVviaJsonPath {
                 },
                 {
                     "k1":"v1",
-                    "priority":"2"
-                },
-                "value_new_1"
+                    "priority":"2",
+                    "recordid":"fakeRecordid"
+                }
             ],
             "key3":234
         }
          */
 
-        // jsonarray 中新增 value; value支持常见的基础数据类型
+        // jsonobj 中新增 kv 对; v支持常见的基础数据类型
         spark.sql(
             s"""
         select
-            put_v_via_jsonpath('${js}',"$$.key2", 99.88) as col2
+            put_kv_via_jsonpath('${js}',"$$.key2[*][?(!(@.recordid))]", "recordid", 99.88) as col2
         """)
           .show(false)
         /*
-       {
+        {
             "key1":"value1",
             "key2":[
                 {
                     "k1":"v1",
-                    "priority":"0"
+                    "priority":"0",
+                    "recordid":99.88
                 },
                 {
                     "recordid":"xxxxxx",
@@ -113,19 +118,20 @@ object PutVviaJsonPath {
                 },
                 {
                     "k1":"v1",
-                    "priority":"2"
-                },
-                99.88
+                    "priority":"2",
+                    "recordid":99.88
+                }
             ],
             "key3":234
         }
          */
 
-        // jsonarray 中新增 value; value可以是数组
+
+        // jsonobj 中新增 kv 对; v可以是数组
         spark.sql(
             s"""
             select
-                put_v_via_jsonpath('${js}',"$$.key2", array('a','b')) as col3
+                put_kv_via_jsonpath('${js}',"$$.key2[*][?(!(@.recordid))]", "recordid", array('a','b')) as col3
             """)
           .show(false)
         /*
@@ -134,7 +140,11 @@ object PutVviaJsonPath {
             "key2":[
                 {
                     "k1":"v1",
-                    "priority":"0"
+                    "priority":"0",
+                    "recordid":[
+                        "a",
+                        "b"
+                    ]
                 },
                 {
                     "recordid":"xxxxxx",
@@ -142,45 +152,54 @@ object PutVviaJsonPath {
                 },
                 {
                     "k1":"v1",
-                    "priority":"2"
-                },
-                [
-                    "a",
-                    "b"
-                ]
+                    "priority":"2",
+                    "recordid":[
+                        "a",
+                        "b"
+                    ]
+                }
             ],
             "key3":234
         }
          */
 
-        // jsonarray 中新增 value; v可以使数组; $ 表示从跟下的jsonarray添加元素
-        val js1 =
-            """
-              |[
-              | 1 , 9.99
-              |]
-              |""".stripMargin
+        // jsonobj 中新增 kv 对; 如果k存在则更新value,如果不存在则新增kv
         spark.sql(
             s"""
             select
-                put_v_via_jsonpath('${js1}',"$$",  array(3.33,10.10)) as col4
+                put_kv_via_jsonpath('${js}',"$$.key2[*][?(!(@.recordid))]", "priority", 999) as col4
             """)
           .show(false)
         /*
-        [1,9.99,[3.33,10.1]]
+        {
+            "key1":"value1",
+            "key2":[
+                {
+                    "k1":"v1",
+                    "priority":999
+                },
+                {
+                    "recordid":"xxxxxx",
+                    "priority":"1"
+                },
+                {
+                    "k1":"v1",
+                    "priority":999
+                }
+            ],
+            "key3":234
+        }
          */
 
-// 报错: 该udf不支持jsonpath解析后是jsonObj 然后去只添加value
-//        val js2 =
-//            """
-//              |{"k1":"v1"}
-//              |""".stripMargin
+
+// 报错 因为jsonpath解析后的数组中的元素是jsonarray  不支持 put kv
 //        spark.sql(
 //            s"""
 //            select
-//                put_v_via_jsonpath('${js2}',"$$",  array(1,2,3)) as col5
+//                put_kv_via_jsonpath('${js}',"$$.key2", "recordid", array(3.33,10.10)) as col4
 //            """)
 //          .show(false)
+
 
         spark.stop()
     }

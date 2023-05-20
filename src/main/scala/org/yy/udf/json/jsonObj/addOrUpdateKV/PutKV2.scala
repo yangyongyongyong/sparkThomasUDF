@@ -1,4 +1,4 @@
-package org.yy.udf.json.change
+package org.yy.udf.json.jsonObj.addOrUpdateKV
 
 import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider
@@ -9,15 +9,21 @@ import org.apache.spark.sql.functions.udf
 import scala.collection.JavaConverters._
 
 
-/*
-    desc: 向json中添加kv对 使用两个jsonpath(修改位置的jsonpath 和 jsonpath提取值作为新的value)修改json
-        方式:
-            1 k使用jsonpath定位 value自己指定
-            2 k使用jsonpath定位 value也是通过jsonpath提取原始数据中的某个值(找不到会报错)
-    使用场景:
-        比如数组是人类,业务需求是: 如果某个具体的人没有性别,就从同层级其他人里随便捞一个性别填充进去
+/**
+ * desc:
+ *      向json中添加kv对 使用两个jsonpath(修改位置的jsonpath 和 jsonpath提取值作为新的value)修改json
+ *      jsonobj(不支持jsonArray) 添加kv对:
+ *          value 支持基础数据类型 不是用户指定具体值 而是通过用户提供的jsonPath从原始数据中提取
+ *          value 支持sql中的array类型
+ * 方式:
+ *      k使用jsonpath定位 value也是通过jsonpath提取原始数据中的某个值(找不到会报错)
+ *      kv不在则新增 存在则更新
+ * 使用场景:
+ *      比如数组是人类,业务需求是: 如果某个具体的人没有性别,就从同层级其他人里随便捞一个性别填充进去
+ * 注意:
+ *      如果value的jsonPath 无法从原始数据中提取到值  则会报错
  */
-object ModVViaJsonPath2 {
+object PutKV2 {
 
     private def configuration = Configuration.builder()
       .jsonProvider(new JacksonJsonNodeJsonProvider())
@@ -32,8 +38,7 @@ object ModVViaJsonPath2 {
             // 这里必须指明类型(包不知道你输出类型是什么 需要你手动指定),否则报错:  java.lang.String cannot be cast to scala.runtime.Nothing
             // 这里语法表示 key2下所有value中, 包含recordid这个key的对象 的recordid组成的数组
             val new_v: java.util.List[Any] = JsonPath.read(json, newJsPath)
-            JsonPath.using(configuration).parse(js)
-              .put(oldJsPath, k, new_v.asScala.head).jsonString()
+            JsonPath.using(configuration).parse(js).put(oldJsPath, k, new_v.asScala.head).jsonString()
         }
     )
 
@@ -100,6 +105,13 @@ object ModVViaJsonPath2 {
          */
 
 
+//        // 报错 因为value的jsonpath必须有值 否则报错
+//        spark.sql(
+//            s"""
+//               |select
+//               | change_value_via_2jsonpath('${js}','recordid','$$.key2[*][?(!(@.recordid))]','$$.key2[*][?(@.recordid1)].recordid1') as col1
+//               |""".stripMargin)
+//          .show(false)
 
         spark.stop()
     }

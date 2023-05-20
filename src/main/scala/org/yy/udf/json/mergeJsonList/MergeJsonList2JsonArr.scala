@@ -7,7 +7,7 @@ import org.apache.spark.sql.functions.{collect_set, udf}
 /**
  * desc: 合并 array[jsonobj | jsonArr] 为 jsonarray
  * input: array( '{"b":"v2"}' , '{"a":"v1"}' )        sql的array[String]类型
- * output: [{"b":"v2"},{"a":"v1"}]                    string类型
+ * output: [{"b":"v2"},{"a":"v1"}]                    string类型 (jsonArray)
  * 注意:
  *      如果输入的数组为空 则返回null . 不是字符串"null"
  */

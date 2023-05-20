@@ -5,8 +5,13 @@ import com.jayway.jsonpath.spi.json.JacksonJsonNodeJsonProvider
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider
 import com.jayway.jsonpath.{Configuration, JsonPath}
 import org.apache.spark.sql.functions.udf
+import scala.collection.JavaConverters._
 
-
+/**
+ * json字符串中 添加kv对
+ *      支持基础数据类型
+ *      支持sql中的array类型
+ */
 object PutKVviaJsonPath {
     private def configuration = Configuration.builder()
       .jsonProvider(new JacksonJsonNodeJsonProvider())
@@ -15,8 +20,11 @@ object PutKVviaJsonPath {
 
     val put_kv_via_jsonpath = udf(
         (js:String,jspath:String,k:String,v:Any) => {
-            JsonPath.using(configuration).parse(js)
-              .put(jspath, k, v).jsonString()
+            if (!v.isInstanceOf[Seq[Any]]) {
+                JsonPath.using(configuration).parse(js).put(jspath, k, v).jsonString()
+            }else {
+                JsonPath.using(configuration).parse(js).set(jspath, v.asInstanceOf[Seq[Any]].asJava).jsonString()
+            }
         }
     )
 
@@ -113,14 +121,60 @@ object PutKVviaJsonPath {
          */
 
 
-        // 报错 不支持数组
-        // 注意 这里的第三个参数是json中的数组
         spark.sql(
             s"""
             select
                 put_kv_via_jsonpath('${js}',"$$.key2[*][?(!(@.recordid))]", "recordid", array('a','b')) as col1
             """)
           .show(false)
+        /*
+        {
+            "key1":"value1",
+            "key2":[
+                [
+                    "a",
+                    "b"
+                ],
+                {
+                    "recordid":"xxxxxx",
+                    "priority":"1"
+                },
+                [
+                    "a",
+                    "b"
+                ]
+            ],
+            "key3":234
+        }
+         */
+
+
+        spark.sql(
+            s"""
+            select
+                put_kv_via_jsonpath('${js}',"$$.key2[*][?(!(@.recordid))]", "recordid", array(3.33,10.10)) as col1
+            """)
+          .show(false)
+        /*
+        {
+            "key1":"value1",
+            "key2":[
+                [
+                    3.33,
+                    10.1
+                ],
+                {
+                    "recordid":"xxxxxx",
+                    "priority":"1"
+                },
+                [
+                    3.33,
+                    10.1
+                ]
+            ],
+            "key3":234
+        }
+         */
 
 
         spark.stop()

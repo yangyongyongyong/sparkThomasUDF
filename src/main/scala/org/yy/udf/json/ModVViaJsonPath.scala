@@ -10,7 +10,7 @@ import scala.collection.JavaConverters._
 
 /*
 desc:
-    使用jsonpath修改json中已有key的value
+    使用jsonpath找到k 修改json中已有key的value value值是手动传入的
     value 支持基础数据类型
     value 支持sql中的array类型
  */

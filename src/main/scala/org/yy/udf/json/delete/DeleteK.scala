@@ -27,8 +27,12 @@ object DeleteK {
 
     val delete_k = udf(
         (js: String, jspath: String) => {
-            val context = JsonPath.using(configuration).parse(js)
-            Try(context.delete(jspath).jsonString()).getOrElse(context.jsonString())
+            if (js != null) {
+                val context = JsonPath.using(configuration).parse(js)
+                Try(context.delete(jspath).jsonString()).getOrElse(context.jsonString())
+            }else{
+                null
+            }
         }
     )
 
@@ -173,6 +177,19 @@ object DeleteK {
         }
          */
 
+        spark.sql(
+            s"""
+                          select
+                              delete_k(null,"$$.key2[*][?(!(@.recordid))]") as col4
+                          """)
+          .show(false)
+        /*
+        +----+
+        |col4|
+        +----+
+        |null|
+        +----+
+         */
 
         spark.stop()
     }

@@ -35,11 +35,15 @@ object PutKV2 {
     val change_value_via_2jsonpath = udf(
         // (原始json, 需要新增的key,oldjsonpath限定新增的key的位置,newjsonpath获取需要填充的值)
         (js: String, k:String,oldJsPath: String, newJsPath: String) => {
-            val json = Configuration.defaultConfiguration().jsonProvider().parse(js)
-            // 这里必须指明类型(包不知道你输出类型是什么 需要你手动指定),否则报错:  java.lang.String cannot be cast to scala.runtime.Nothing
-            // 这里语法表示 key2下所有value中, 包含recordid这个key的对象 的recordid组成的数组
-            val new_v: java.util.List[Any] = JsonPath.read(json, newJsPath)
-            JsonPath.using(configuration).parse(js).put(oldJsPath, k, new_v.asScala.head).jsonString()
+            if (js != null) {
+                val json = Configuration.defaultConfiguration().jsonProvider().parse(js)
+                // 这里必须指明类型(包不知道你输出类型是什么 需要你手动指定),否则报错:  java.lang.String cannot be cast to scala.runtime.Nothing
+                // 这里语法表示 key2下所有value中, 包含recordid这个key的对象 的recordid组成的数组
+                val new_v: java.util.List[Any] = JsonPath.read(json, newJsPath)
+                JsonPath.using(configuration).parse(js).put(oldJsPath, k, new_v.asScala.head).jsonString()
+            } else {
+                null
+            }
         }
     )
 
@@ -109,12 +113,26 @@ object PutKV2 {
         }
          */
 
+        spark.sql(
+            s"""
+               |select
+               | change_value_via_2jsonpath(null,'recordid','$$.key2[*][?(!(@.recordid))]','$$.key2[*][?(@.recordid)].recordid') as col2
+               |""".stripMargin)
+          .show(false)
+        /*
+        +----+
+        |col2|
+        +----+
+        |null|
+        +----+
+         */
+
 
 //        // 报错 因为value的jsonpath必须有值 否则报错
 //        spark.sql(
 //            s"""
 //               |select
-//               | change_value_via_2jsonpath('${js}','recordid','$$.key2[*][?(!(@.recordid))]','$$.key2[*][?(@.recordid1)].recordid1') as col1
+//               | change_value_via_2jsonpath('${js}','recordid','$$.key2[*][?(!(@.recordid))]','$$.key2[*][?(@.recordid1)].recordid1') as col1111
 //               |""".stripMargin)
 //          .show(false)
 

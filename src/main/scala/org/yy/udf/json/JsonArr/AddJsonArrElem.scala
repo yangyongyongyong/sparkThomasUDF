@@ -23,11 +23,15 @@ object AddJsonArrElem {
 
     val put_v_via_jsonpath = udf(
         (js:String,jspath:String,v:Any) => {
-            if (!v.isInstanceOf[Seq[Any]]) {
-                JsonPath.using(configuration).parse(js).add(jspath,v).jsonString()
-            }else {
-                // 处理数组
-                JsonPath.using(configuration).parse(js).add(jspath, v.asInstanceOf[Seq[Any]].asJava).jsonString()
+            if (js != null) {
+                if (!v.isInstanceOf[Seq[Any]]) {
+                    JsonPath.using(configuration).parse(js).add(jspath, v).jsonString()
+                } else {
+                    // 处理数组
+                    JsonPath.using(configuration).parse(js).add(jspath, v.asInstanceOf[Seq[Any]].asJava).jsonString()
+                }
+            }else{
+                null
             }
         }
     )
@@ -156,6 +160,23 @@ object AddJsonArrElem {
 //                put_v_via_jsonpath('${js2}',"$$",  array(1,2,3)) as col5
 //            """)
 //          .show(false)
+
+
+
+        spark.sql(
+            s"""
+            select
+                put_v_via_jsonpath(null,"$$",  array(3.33,10.10)) as col6
+            """)
+          .show(false)
+        /*
+        +----+
+        |col6|
+        +----+
+        |null|
+        +----+
+         */
+
 
         spark.stop()
     }

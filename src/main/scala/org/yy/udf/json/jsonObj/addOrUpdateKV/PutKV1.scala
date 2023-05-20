@@ -24,11 +24,15 @@ object PutKV1 {
 
     val put_kv_via_jsonpath = udf(
         (js:String,jspath:String,k:String,v:Any) => {
-            if (!v.isInstanceOf[Seq[Any]]) {
-                JsonPath.using(configuration).parse(js).put(jspath, k, v).jsonString()
-            }else {
-                // value是 sql中数组类型
-                JsonPath.using(configuration).parse(js).put(jspath,k, v.asInstanceOf[Seq[Any]].asJava).jsonString()
+            if (js != null) {
+                if (!v.isInstanceOf[Seq[Any]]) {
+                    JsonPath.using(configuration).parse(js).put(jspath, k, v).jsonString()
+                } else {
+                    // value是 sql中数组类型
+                    JsonPath.using(configuration).parse(js).put(jspath, k, v.asInstanceOf[Seq[Any]].asJava).jsonString()
+                }
+            }else{
+                null
             }
         }
     )
@@ -193,11 +197,27 @@ object PutKV1 {
          */
 
 
+        spark.sql(
+            s"""
+            select
+                put_kv_via_jsonpath(null,"$$.key2[*][?(!(@.recordid))]", "priority", 999) as col5
+            """)
+          .show(false)
+        /*
+        +----+
+        |col5|
+        +----+
+        |null|
+        +----+
+         */
+
+
+
 // 报错 因为jsonpath解析后的数组中的元素是jsonarray  不支持 put kv
 //        spark.sql(
 //            s"""
 //            select
-//                put_kv_via_jsonpath('${js}',"$$.key2", "recordid", array(3.33,10.10)) as col4
+//                put_kv_via_jsonpath('${js}',"$$.key2", "recordid", array(3.33,10.10)) as col6
 //            """)
 //          .show(false)
 

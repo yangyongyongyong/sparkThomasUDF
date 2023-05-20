@@ -7,4 +7,5 @@ https://github.com/alibaba/fastjson2/blob/main/docs/jsonpath_cn.md
 https://github.com/json-path/JsonPath
 
 
-
+# 注意事项
+- 如果传入函数的json值为null,则返回值必为null

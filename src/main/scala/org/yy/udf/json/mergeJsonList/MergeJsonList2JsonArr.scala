@@ -10,6 +10,7 @@ import org.apache.spark.sql.functions.{collect_set, udf}
  * output: [{"b":"v2"},{"a":"v1"}]                    string类型 (jsonArray)
  * 注意:
  *      如果输入的数组为空 则返回null . 不是字符串"null"
+ *      合并会剔除数组中的null
  */
 object MergeJsonList2JsonArr {
 

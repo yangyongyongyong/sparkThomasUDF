@@ -10,11 +10,11 @@ import scala.collection.JavaConverters._
 
 /*
 desc:
-    使用jsonpath修改已有key的value
+    使用jsonpath修改json中已有key的value
     value 支持基础数据类型
     value 支持sql中的array类型
  */
-object ChangeValueViaJsonPath {
+object ModVViaJsonPath {
     private def configuration = Configuration.builder()
       .jsonProvider(new JacksonJsonNodeJsonProvider())
       .mappingProvider(new JacksonMappingProvider())

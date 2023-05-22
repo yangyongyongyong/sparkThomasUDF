@@ -6,6 +6,8 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 /**
  * desc: struct删除kv
+ *      注意: 如果 dropFields 的key不存在,也不会报错.
+ *
  */
 object dropKV {
     def main(args: Array[String]): Unit = {
@@ -61,6 +63,21 @@ object dropKV {
         |{usa, 1}   |{usa}     |
         |{china, 14}|{china}   |
         +-----------+----------+
+         */
+
+        df2
+          .withColumn(
+              "new_struct"
+              , 'c1.dropFields("notExistCol")
+          )
+        .show(false)
+        /*
+        +-----------+-----------+
+        |c1         |new_struct |
+        +-----------+-----------+
+        |{usa, 1}   |{usa, 1}   |
+        |{china, 14}|{china, 14}|
+        +-----------+-----------+
          */
 
         df3.select(to_json('new_struct)).show(false)

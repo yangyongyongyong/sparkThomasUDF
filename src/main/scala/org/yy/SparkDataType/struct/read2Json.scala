@@ -3,6 +3,9 @@ package org.yy.SparkDataType.struct
 import org.apache.spark.sql.{Row, SparkSession}
 import org.apache.spark.sql.functions.{expr, struct, to_json, udf}
 
+/**
+ * desc: 读取struct转换为json
+ */
 object read2Json {
     def main(args: Array[String]): Unit = {
         val spark = SparkSession.builder()

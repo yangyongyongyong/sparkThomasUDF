@@ -6,9 +6,11 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 
 /**
- * desc: struct增加kv
+ * desc: struct增加/更新 kv
+ *      注意:withFiled有新增和更新的功能
+ *      put: add or update
  */
-object addKV2 {
+object putKV2 {
     def main(args: Array[String]): Unit = {
         val spark = SparkSession.builder()
           .master("local[*]")
@@ -49,34 +51,46 @@ object addKV2 {
          */
 
         //通过withField来增加struct的kv
-        df2
+        val df3 = df2
           .withColumn(
               "new_struct"
-              ,'c1.withField("kk1",col = lit("vv1")) //value可以选择join其他表后的列
-          ).show(false)
+              , 'c1.withField("kk1", col = lit("vv1")) //value可以选择join其他表后的列
+          )
+        df3.show(false)
         /*
-        +--------------------+
-        |struct_new          |
-        +--------------------+
-        |{usa, 1, null}      |
-        |{china, 14, beijing}|
-        +--------------------+
+        +-----------+----------------+
+        |c1         |new_struct      |
+        +-----------+----------------+
+        |{usa, 1}   |{usa, 1, vv1}   |
+        |{china, 14}|{china, 14, vv1}|
+        +-----------+----------------+
          */
 
+        //注意:withFiled有新增和更新的功能
         df2
           .withColumn(
               "new_struct"
-              , 'c1.withField("kk1", col = lit("vv1"))
-          )
+              , 'c1.withField("peopleNum", col = lit(999)) //value可以选择join其他表后的列
+          ).show()
+        /*
+        +-----------+------------+
+        |         c1|  new_struct|
+        +-----------+------------+
+        |   {usa, 1}|  {usa, 999}|
+        |{china, 14}|{china, 999}|
+        +-----------+------------+
+         */
+
+        df3
           .select(to_json('new_struct).as("json"))
           .show(false)
         /*
-        +---------------------------------------------------------+
-        |to_json(struct_new)                                      |
-        +---------------------------------------------------------+
-        |{"country":"usa","peopleNum":"1"}                        |
-        |{"country":"china","peopleNum":"14","cityname":"beijing"}|
-        +---------------------------------------------------------+
+        +------------------------------------------------+
+        |json                                            |
+        +------------------------------------------------+
+        |{"country":"usa","peopleNum":"1","kk1":"vv1"}   |
+        |{"country":"china","peopleNum":"14","kk1":"vv1"}|
+        +------------------------------------------------+
          */
 
         spark.stop()

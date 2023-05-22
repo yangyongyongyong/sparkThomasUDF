@@ -9,7 +9,7 @@ import org.apache.spark.sql.types.{StringType, StructField, StructType}
  * desc: struct增加kv
  * 不方便 已废弃
  */
-object addKV1 {
+object putKV1 {
     def main(args: Array[String]): Unit = {
         val spark = SparkSession.builder()
           .master("local[*]")

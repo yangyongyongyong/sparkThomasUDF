@@ -93,6 +93,16 @@ object putKV2 {
         +------------------------------------------------+
          */
 
+// 报错 只有struct类型的列调用 withField 才不会报错,其他类型列会导致报错
+// 报错内容: data type mismatch: struct argument should be struct type, got: string
+//        val df = Seq(
+//            ("a",1)
+//            ,("b",2)
+//        ).toDF("c1","c2")
+//          .select('c1.withField("num",lit(999)))
+//        df.printSchema()
+//        df.show()
+
         spark.stop()
     }
 

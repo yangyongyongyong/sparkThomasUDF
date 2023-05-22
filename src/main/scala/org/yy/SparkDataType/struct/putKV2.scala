@@ -1,14 +1,16 @@
 package org.yy.SparkDataType.struct
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions.{element_at, from_json, lit, to_json}
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.functions.{element_at, from_json, lit, to_json, when}
+import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
 
 
 /**
  * desc: struct增加/更新 kv
- *      注意:withFiled有新增和更新的功能
+ * 注意:
+ *      withFiled有新增和更新的功能
  *      put: add or update
+ *      支持多层字段的值修改
  */
 object putKV2 {
     def main(args: Array[String]): Unit = {
@@ -93,15 +95,79 @@ object putKV2 {
         +------------------------------------------------+
          */
 
-// 报错 只有struct类型的列调用 withField 才不会报错,其他类型列会导致报错
-// 报错内容: data type mismatch: struct argument should be struct type, got: string
-//        val df = Seq(
-//            ("a",1)
-//            ,("b",2)
-//        ).toDF("c1","c2")
-//          .select('c1.withField("num",lit(999)))
-//        df.printSchema()
-//        df.show()
+        // 报错 只有struct类型的列调用 withField 才不会报错,其他类型列会导致报错
+        // 报错内容: data type mismatch: struct argument should be struct type, got: string
+        //        val df = Seq(
+        //            ("a",1)
+        //            ,("b",2)
+        //        ).toDF("c1","c2")
+        //          .select('c1.withField("num",lit(999)))
+        //        df.printSchema()
+        //        df.show()
+
+
+        // 多层级修改
+        val df11 = Seq(
+            "{'country':'usa','peopleNum':{'mannum':11,'womannum':22} }"
+            , "{'country':'china','peopleNum':{'mannum':44 } }"
+        ).toDF()
+
+        val st1 = StructType(
+            StructField("country", StringType)
+              :: StructField("peopleNum"
+                , StructType(
+                    StructField("mannum", LongType)
+                      :: StructField("womannum", LongType)
+                      :: Nil
+                )
+            )
+              :: Nil
+        )
+        // 构造struct 生成struct
+        val df22 = df11.select(from_json('value, st1).as("c1"))
+        df22.show()
+        /*
+        +-------------------+
+        |                 c1|
+        +-------------------+
+        |    {usa, {11, 22}}|
+        |{china, {44, null}}|
+        +-------------------+
+         */
+        df22.printSchema()
+
+        df22.select(
+            when($"c1.peopleNum.womannum".isNull,$"c1".withField("peopleNum.womannum",lit(99999)))
+              .otherwise($"c1").as("field22")
+        ).show()
+        /*
+        +--------------------+
+        |             field22|
+        +--------------------+
+        |     {usa, {11, 22}}|
+        |{china, {44, 99999}}|
+        +--------------------+
+         */
+
+        df22.createOrReplaceTempView("view_1")
+        spark.sql("""
+          select
+            case when c1.peopleNum.womannum is null  then c1 else c1 end as field1
+          from view_1
+          """)
+          .show()
+        /*
+        +-------------------+
+        |             field1|
+        +-------------------+
+        |    {usa, {11, 22}}|
+        |{china, {44, null}}|
+        +-------------------+
+         */
+
+
+
+
 
         spark.stop()
     }
